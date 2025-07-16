@@ -231,7 +231,6 @@ deployImage(){
     read -p " Please provide the NFS share mount point [e.g. /volume1/PXE] : " MOUNTPOINT
     echo -e $MAGENTA
     echo " Changing the /boot/cmdline.txt to boot from the NFS directory ..."
-    #sed -i "s|\(^.*root=\).*$|\1/dev/nfs nfsroot=${NFSIP}:${MOUNTPOINT}/filesystems/${SERIALNUMBER},vers=4.1,proto=tcp rw ip=dhcp rootwait elevator=deadline|" "/NFSPXE/boot/${SERIALNUMBER}/cmdline.txt"
     # Temporarily using NFS v3
     sed -i "s|\(^.*root=\).*$|\1/dev/nfs nfsroot=${NFSIP}:${MOUNTPOINT}/filesystems/${SERIALNUMBER},vers=3 rw ip=dhcp rootwait|" "/NFSPXE/boot/${SERIALNUMBER}/cmdline.txt"
 
@@ -631,6 +630,21 @@ installPXE(){
   echo
   apt-get autoremove -y > /dev/null & showSpinner
   echo
+
+  # Installing WakeOnLan
+  echo
+  echo -e $MAGENTA "Installing WakeOnLan ..." $BLACK
+  echo
+  WAKEONLAN_STATUS=$(dpkg-query -W --showformat='${Status}\n' wakeonlan|grep "install ok installed")
+  if [ "" = "WAKEONLAN_STATUS" ]; then
+    echo -e $YELLOW "  - WakeOnLan is not installed yet. It will be installed now ..." $BLACK
+    echo
+    apt-get install wakeonlan -y > /dev/null & showSpinner
+    echo
+  else
+    echo -e $GREEN "  - WakeOnLAn has already been installed. :)" $BLACK
+    echo
+  fi
 
   promptForEnter
 
@@ -1128,6 +1142,7 @@ mainMenu(){
   echo -e " 8) Provision a new Pi using an image"
   echo -e " 9) Delete an image of a Pi"
   echo -e "10) Delete provisioned Pi from Server"
+  echo -e "11) Power On a Node"
   echo -e " --------------------------------------------- Done For Now ------------------------------------------------"
   echo -e "q) Quit"
   echo
@@ -1166,6 +1181,9 @@ mainMenu(){
       ;;
     10)
       deleteProvisionedPi
+      ;;
+    11)
+      wakeNode
       ;;
     q | Q)
       clear
@@ -1596,6 +1614,23 @@ uninstallPXE(){
   echo
   promptForEnter
   reboot now
+}
+
+wakeNode(){
+  showHeader poweron
+  echo
+  echo -e $YELLOW"Known nodes:"
+  cat /PXE/nodes.txt
+  echo
+  read -p "Enter node name to wake: " NODENAME
+  MAC=$(grep "^$NODENAME" /PXE/nodes.txt | awk '{print $3}')
+  if [ -z "$MAC" ]; then
+    echo -e $RED "Node not found!" $BLACK
+    return
+  fi
+  echo "Sending Wake-on-LAN packet to $NODENAME ($MAC)..."
+  wakeonlan "$MAC"
+  promptForEnter
 }
 
 ################### EXECUTION ###################

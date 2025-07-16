@@ -1191,7 +1191,8 @@ makeImage(){
   echo "    Pi-3B-Stretch-MyApp"
   echo "    Pi-Zero-Jessie-MagicMirror"
   echo
-  read -p " What do you want to name the image? [e.g. See above examples] : " IMAGENAME
+  IMAGENAME="worker-node"
+  echo "Using shared image name: ${IMAGENAME}"
   while [ -d /PXE/images/boot/${IMAGENAME} ]
   do
     showHeader imager

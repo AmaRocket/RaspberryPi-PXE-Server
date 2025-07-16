@@ -1,0 +1,9 @@
+# /etc/systemd/system/pxe-discovery.service
+[Unit]
+Description=PXE Auto-Discovery Logger
+
+[Service]
+ExecStart=/usr/local/bin/pxe-discovery.sh
+
+[Install]
+WantedBy=multi-user.target

@@ -514,99 +514,139 @@ identifyPis(){
 }
 
 # This function is to do the installation process
-installPXE() {
+installPXE(){
+  # Clean the screen
   showHeader install
 
   ################### Part 1 - Update and install dependencies ###################
-  echo -e $MAGENTA "\nUpdating list of packages ..." $BLACK
+  echo
+  echo -e $MAGENTA "Updating list of packages ..." $BLACK
+  echo
   apt-get update -y > /dev/null & showSpinner
+  echo
   if [ $? -ne 0 ]; then
-    echo -e $RED "[!] Error updating package indexes!" $BLACK
+    echo -e $RED "[!] An error occurred while updating the package indexes!" $BLACK
     exit 1
   fi
 
-  echo -e $MAGENTA "\nUpgrading packages ..." $BLACK
+  echo
+  echo -e $MAGENTA "Upgrading packages ..." $BLACK
+  echo
   apt-get upgrade -y > /dev/null & showSpinner
+  echo
   if [ $? -ne 0 ]; then
-    echo -e $RED "[!] Error upgrading packages!" $BLACK
+    echo -e $RED "[!] An error occurred while upgrading the packages!" $BLACK
     exit 1
   fi
 
-  echo -e $MAGENTA "\nUpgrading system ..." $BLACK
+  echo
+  echo -e $MAGENTA "Upgrading system ..." $BLACK
+  echo
   apt-get dist-upgrade -y > /dev/null & showSpinner
+  echo
   if [ $? -ne 0 ]; then
-    echo -e $RED "[!] Error upgrading system!" $BLACK
+    echo -e $RED "[!] An error occurred while upgrading the system!" $BLACK
     exit 1
   fi
 
-  ################### Part 2 - Dependency Installations ###################
-
-  # NFS
-  echo -e $MAGENTA "\nChecking NFS Kernel Server ..." $BLACK
-  if ! dpkg -l | grep -q "^ii\s\+nfs-kernel-server"; then
-    echo -e $YELLOW "  - Installing NFS Kernel Server ..." $BLACK
+  echo
+  echo -e $MAGENTA "Checking installion of NFS Kernel Server ..." $BLACK
+  echo
+  NFS_STATUS=$(dpkg-query -W --showformat='${Status}\n' nfs-kernel-server|grep "install ok installed")
+  if [ "" = "$NFS_STATUS" ]; then
+    echo -e $YELLOW "  - NFS Kernel Server is not installed yet. It will be installed now ..." $BLACK
+    echo
     apt-get install nfs-kernel-server -y > /dev/null & showSpinner
-    [ $? -ne 0 ] && echo -e $RED "[!] NFS installation failed!" $BLACK && exit 1
+    echo
   else
-    echo -e $GREEN "  - NFS Kernel Server already installed." $BLACK
+    echo -e $GREEN "  - NFS Kernel Server has already been installed. :)" $BLACK
+    echo
   fi
-
-  # Samba
-  echo -e $MAGENTA "\nChecking Samba ..." $BLACK
-  if ! dpkg -l | grep -q "^ii\s\+samba-common"; then
-    echo -e $YELLOW "  - Installing Samba ..." $BLACK
-    apt-get install samba -y > /dev/null & showSpinner
-    [ $? -ne 0 ] && echo -e $RED "[!] Samba installation failed!" $BLACK && exit 1
-  else
-    echo -e $GREEN "  - Samba already installed." $BLACK
-  fi
-
-  # CIFS
-  echo -e $MAGENTA "\nChecking CIFS-Utils ..." $BLACK
-  if ! dpkg -l | grep -q "^ii\s\+cifs-utils"; then
-    echo -e $YELLOW "  - Installing CIFS-Utils ..." $BLACK
-    apt-get install cifs-utils -y > /dev/null & showSpinner
-    [ $? -ne 0 ] && echo -e $RED "[!] CIFS-Utils installation failed!" $BLACK && exit 1
-  else
-    echo -e $GREEN "  - CIFS-Utils already installed." $BLACK
-  fi
-
-  ################### Part 3 - DNSMasq + Network Checks ###################
-
-  # Check if eth1 exists before proceeding
-  echo -e $MAGENTA "\nValidating interface eth1 before installing dnsmasq..." $BLACK
-  if ! ip link show eth1 > /dev/null 2>&1; then
-    echo -e $RED "[!] Interface eth1 not found. Please configure your network correctly!" $BLACK
+  # Check for error while running installation
+  if [ $? -ne 0 ]; then
+    echo -e $RED "[!] An error occurred while installing the NFS Kernel Server!" $BLACK
     exit 1
   fi
 
-  echo -e $MAGENTA "\nChecking DNSMasq ..." $BLACK
-  if ! dpkg -l | grep -q "^ii\s\+dnsmasq"; then
-    echo -e $YELLOW "  - Installing DNSMasq ..." $BLACK
+  echo
+  echo -e $MAGENTA "Checking installion of Samba ..." $BLACK
+  echo
+  SAMBA_STATUS=$(dpkg-query -W --showformat='${Status}\n' samba-common|grep "install ok installed")
+  if [ "" = "$SAMBA_STATUS" ]; then
+    echo -e $YELLOW "  - Samba is not installed yet. It will be installed now ..." $BLACK
+    echo
+    apt-get install samba -y > /dev/null & showSpinner
+    echo
+  else
+    echo -e $GREEN "  - Samba has already been installed. :)" $BLACK
+    echo
+  fi
+  # Check for error while running installation
+  if [ $? -ne 0 ]; then
+    echo -e $RED "[!] An error occurred while installing Samba!" $BLACK
+    exit 1
+  fi
+
+  echo
+  echo -e $MAGENTA "Checking installion of CIFS-Utils ..." $BLACK
+  echo
+  CIFS_STATUS=$(dpkg-query -W --showformat='${Status}\n' cifs-utils|grep "install ok installed")
+  if [ "" = "$CIFS_STATUS" ]; then
+    echo -e $YELLOW "  - CIFS-Utils is not installed yet. It will be installed now ..." $BLACK
+    echo
+    apt-get install cifs-utils -y > /dev/null & showSpinner
+    echo
+  else
+    echo -e $GREEN "  - CIFS-Utils has already been installed. :)" $BLACK
+    echo
+  fi
+  # Check for error while running installation
+  if [ $? -ne 0 ]; then
+    echo -e $RED "[!] An error occurred while installing CIFS-Utils!" $BLACK
+    exit 1
+  fi
+
+  echo
+  echo -e $MAGENTA "Installing DNSMasq ..." $BLACK
+  echo
+  DNSMASQ_STATUS=$(dpkg-query -W --showformat='${Status}\n' dnsmasq|grep "install ok installed")
+  if [ "" = "$DNSMASQ_STATUS" ]; then
+    echo -e $YELLOW "  - DNSMasq is not installed yet. It will be installed now ..." $BLACK
+    echo
     apt-get install dnsmasq -y > /dev/null & showSpinner
-    [ $? -ne 0 ] && echo -e $RED "[!] dnsmasq installation failed!" $BLACK && exit 1
+    echo
   else
-    echo -e $GREEN "  - DNSMasq already installed." $BLACK
+    echo -e $GREEN "  - DNSMasq has already been installed. :)" $BLACK
+    echo
+  fi
+  # Check for error while running installation
+  if [ $? -ne 0 ]; then
+    echo -e $RED "[!] An error occurred while installing dnsmasq!" $BLACK
+    exit 1
   fi
 
-  ################### Part 4 - Optional Tools ###################
-
-  echo -e $MAGENTA "\nInstalling WakeOnLan ..." $BLACK
-  if ! dpkg -l | grep -q "^ii\s\+wakeonlan"; then
-    echo -e $YELLOW "  - Installing WakeOnLan ..." $BLACK
-    apt-get install wakeonlan -y > /dev/null & showSpinner
-    [ $? -ne 0 ] && echo -e $RED "[!] WakeOnLan installation failed!" $BLACK && exit 1
-  else
-    echo -e $GREEN "  - WakeOnLan already installed." $BLACK
-  fi
-
-  ################### Final Cleanup ###################
-
-  echo -e $MAGENTA "\nRemoving unused packages ..." $BLACK
+  echo
+  echo -e $MAGENTA "Removing unused packages ..." $BLACK
+  echo
   apt-get autoremove -y > /dev/null & showSpinner
+  echo
+
+  # Installing WakeOnLan
+  echo
+  echo -e $MAGENTA "Installing WakeOnLan ..." $BLACK
+  echo
+  WAKEONLAN_STATUS=$(dpkg-query -W --showformat='${Status}\n' wakeonlan|grep "install ok installed")
+  if [ "" = "$WAKEONLAN_STATUS" ]; then
+    echo -e $YELLOW "  - WakeOnLan is not installed yet. It will be installed now ..." $BLACK
+    echo
+    apt-get install wakeonlan -y > /dev/null & showSpinner
+    echo
+  else
+    echo -e $GREEN "  - WakeOnLAn has already been installed. :)" $BLACK
+    echo
+  fi
 
   promptForEnter
-}
 
   ################### Part 2 - Determine how we will be running the system ###################
 
@@ -1446,7 +1486,7 @@ showSpinner(){
   done
 }
 
-# This function is to do the deinstallation process
+# This function is to do the installation process
 uninstallPXE(){
   showHeader uninstall
 
@@ -1455,15 +1495,11 @@ uninstallPXE(){
   echo
   echo -e $MAGENTA "Disabling the system services ..." $BLACK
   echo
-  {
-    systemctl stop dnsmasq rpcbind nfs-kernel-server systemd-networkd
-    systemctl disable dnsmasq &> /dev/null && \
-    systemctl disable rpcbind &> /dev/null && \
-    systemctl disable nfs-kernel-server &> /dev/null && \
-    systemctl disable systemd-networkd &> /dev/null
-  } & showSpinner
-  wait $!
-  RESULT=$?
+  systemctl disable dnsmasq &> /dev/null && \
+  systemctl disable dnsmasq.service &> /dev/null && \
+  systemctl disable rpcbind &> /dev/null && \
+  systemctl disable nfs-kernel-server &> /dev/null && \
+  systemctl disable systemd-networkd &> /dev/null & showSpinner
   # Check for error
   if [ $? -ne 0 ]; then
     echo -e $RED "[!] An error occurred while disabling the services!" $BLACK
@@ -1481,10 +1517,10 @@ uninstallPXE(){
     echo -e $MAGENTA
     echo " Deleting /PXE and its files ..."
     if [ -d /NFSPXE ]; then
-      rm -rf /NFSPXE/* > /dev/null & showSpinner
+      rm -R /NFSPXE/* > /dev/null & showSpinner
     fi
     if [ -d /PXE ]; then
-      rm -rf /PXE/* > /dev/null & showSpinner
+      rm -R /PXE/* > /dev/null & showSpinner
     fi
     echo
   fi
@@ -1493,7 +1529,7 @@ uninstallPXE(){
   CHECK=$(cat /etc/fstab | grep /PXE)
   if [ ! -z "$CHECK" ]; then
     echo -e $MAGENTA "Unmounting /PXE ..."
-    mountpoint -q /PXE && umount /PXE > /dev/null
+    umount /PXE > /dev/null
     echo
   else
     echo -e $MAGENTA "No /PXE to unmount"
@@ -1502,7 +1538,7 @@ uninstallPXE(){
   CHECK=$(cat /etc/fstab | grep /NFSPXE)
   if [ ! -z "$CHECK" ]; then
     echo -e $MAGENTA "Unmounting /NFSPXE mount ..."
-    mountpoint -q /NFSPXE && umount /NFSPXE > /dev/null
+    umount /NFSPXE > /dev/null
     echo
   else
     echo -e $MAGENTA "No /NFSPXE to unmount"
@@ -1590,12 +1626,10 @@ wakeNode(){
   cat /PXE/nodes.txt
   echo
   read -p "Enter node name to wake: " NODENAME
-  NODENAME=$(echo "$NODENAME" | tr -d '[:space:]')
   MAC=$(grep "^$NODENAME" /PXE/nodes.txt | awk '{print $3}')
   if [ -z "$MAC" ]; then
-    [ ! -f /PXE/nodes.txt ] && echo -e $RED"No nodes.txt found!" && return
-#    echo -e $RED "Node not found!" $BLACK
-#    return
+    echo -e $RED "Node not found!" $BLACK
+    return
   fi
   echo "Sending Wake-on-LAN packet to $NODENAME ($MAC)..."
   wakeonlan "$MAC"

@@ -1446,7 +1446,7 @@ showSpinner(){
   done
 }
 
-# This function is to do the installation process
+# This function is to do the deinstallation process
 uninstallPXE(){
   showHeader uninstall
 
@@ -1455,11 +1455,15 @@ uninstallPXE(){
   echo
   echo -e $MAGENTA "Disabling the system services ..." $BLACK
   echo
-  systemctl disable dnsmasq &> /dev/null && \
-  systemctl disable dnsmasq.service &> /dev/null && \
-  systemctl disable rpcbind &> /dev/null && \
-  systemctl disable nfs-kernel-server &> /dev/null && \
-  systemctl disable systemd-networkd &> /dev/null & showSpinner
+  {
+    systemctl stop dnsmasq rpcbind nfs-kernel-server systemd-networkd
+    systemctl disable dnsmasq &> /dev/null && \
+    systemctl disable rpcbind &> /dev/null && \
+    systemctl disable nfs-kernel-server &> /dev/null && \
+    systemctl disable systemd-networkd &> /dev/null
+  } & showSpinner
+  wait $!
+  RESULT=$?
   # Check for error
   if [ $? -ne 0 ]; then
     echo -e $RED "[!] An error occurred while disabling the services!" $BLACK
@@ -1477,10 +1481,10 @@ uninstallPXE(){
     echo -e $MAGENTA
     echo " Deleting /PXE and its files ..."
     if [ -d /NFSPXE ]; then
-      rm -R /NFSPXE/* > /dev/null & showSpinner
+      rm -rf /NFSPXE/* > /dev/null & showSpinner
     fi
     if [ -d /PXE ]; then
-      rm -R /PXE/* > /dev/null & showSpinner
+      rm -rf /PXE/* > /dev/null & showSpinner
     fi
     echo
   fi
@@ -1489,7 +1493,7 @@ uninstallPXE(){
   CHECK=$(cat /etc/fstab | grep /PXE)
   if [ ! -z "$CHECK" ]; then
     echo -e $MAGENTA "Unmounting /PXE ..."
-    umount /PXE > /dev/null
+    mountpoint -q /PXE && umount /PXE > /dev/null
     echo
   else
     echo -e $MAGENTA "No /PXE to unmount"
@@ -1498,7 +1502,7 @@ uninstallPXE(){
   CHECK=$(cat /etc/fstab | grep /NFSPXE)
   if [ ! -z "$CHECK" ]; then
     echo -e $MAGENTA "Unmounting /NFSPXE mount ..."
-    umount /NFSPXE > /dev/null
+    mountpoint -q /NFSPXE && umount /NFSPXE > /dev/null
     echo
   else
     echo -e $MAGENTA "No /NFSPXE to unmount"
@@ -1586,10 +1590,12 @@ wakeNode(){
   cat /PXE/nodes.txt
   echo
   read -p "Enter node name to wake: " NODENAME
+  NODENAME=$(echo "$NODENAME" | tr -d '[:space:]')
   MAC=$(grep "^$NODENAME" /PXE/nodes.txt | awk '{print $3}')
   if [ -z "$MAC" ]; then
-    echo -e $RED "Node not found!" $BLACK
-    return
+    [ ! -f /PXE/nodes.txt ] && echo -e $RED"No nodes.txt found!" && return
+#    echo -e $RED "Node not found!" $BLACK
+#    return
   fi
   echo "Sending Wake-on-LAN packet to $NODENAME ($MAC)..."
   wakeonlan "$MAC"

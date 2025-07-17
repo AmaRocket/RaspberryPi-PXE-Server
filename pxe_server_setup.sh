@@ -340,7 +340,7 @@ deployImage(){
       mainMenu
     fi
 
-    NETWORKINFO=$(ip -4 addr show dev eth0 | grep inet)
+    NETWORKINFO=$(ip -4 addr show dev eth1 | grep inet)
     NFSIP=$(sed -nr 's|.*inet ([^ ]+)/.*|\1|p' <<< ${NETWORKINFO})
     NFSMOUNTPOINT=/PXE
 
@@ -491,7 +491,7 @@ identifyPis(){
   echo " IT WILL TAKE TIME.  Please be patient."
   echo " -----------------------------------------------------------------------------------------------------------"
 
-  NETWORKINFO=$(ip -4 addr show dev eth0 | grep inet)
+  NETWORKINFO=$(ip -4 addr show dev eth1 | grep inet)
   GATEWAY=$(ip route | awk '/default/ {print $3}')
   BASEIP=$(echo $GATEWAY | awk -F '.' '{ print $1"."$2"."$3"." }')
 
@@ -1047,7 +1047,7 @@ installPXE(){
   echo
   echo -e $MAGENTA "Preparing the DNSMasq configuration file ..." $BLACK
   echo
-  NETWORKINFO=$(ip -4 addr show dev eth0 | grep inet)
+  NETWORKINFO=$(ip -4 addr show dev eth1 | grep inet)
   BRD=$(sed -n 's|^.*\s*brd\s\+\(\S\+\)\s.*|\1|p' <<< ${NETWORKINFO})
   # Append to the configuration file
   # Set the Broadcast address of our network (to listen in).  Set the PXE service for Raspberry Pis.  Set the root of the TFTP server to our boot folder.
@@ -1061,33 +1061,33 @@ installPXE(){
   echo "# End DNSMasq" >> /etc/dnsmasq.conf
 
   echo
-  echo -e $MAGENTA "Preparing the 10-eth0 network configuration file ..." $BLACK
+  echo -e $MAGENTA "Preparing the 10-eth1 network configuration file ..." $BLACK
   echo
-  echo "# Start 10-eth0 configuration" > /etc/systemd/network/10-eth0.netdev
-  echo "[Match]" >> /etc/systemd/network/10-eth0.netdev
-  echo "Name=eth0" >> /etc/systemd/network/10-eth0.netdev
-  echo "" >> /etc/systemd/network/10-eth0.netdev
-  echo "[Network]" >> /etc/systemd/network/10-eth0.netdev
-  echo "DHCP=no" >> /etc/systemd/network/10-eth0.netdev
-  echo "# End 10-eth0 configuration" >> /etc/systemd/network/10-eth0.netdev
+  echo "# Start 10-eth1 configuration" > /etc/systemd/network/10-eth1.netdev
+  echo "[Match]" >> /etc/systemd/network/10-eth1.netdev
+  echo "Name=eth1" >> /etc/systemd/network/10-eth1.netdev
+  echo "" >> /etc/systemd/network/10-eth1.netdev
+  echo "[Network]" >> /etc/systemd/network/10-eth1.netdev
+  echo "DHCP=no" >> /etc/systemd/network/10-eth1.netdev
+  echo "# End 10-eth1 configuration" >> /etc/systemd/network/10-eth1.netdev
 
   echo
-  echo -e $MAGENTA "Preparing the 11-eth0 network configuration file ..." $BLACK
+  echo -e $MAGENTA "Preparing the 11-eth1 network configuration file ..." $BLACK
   echo
   INET=$(sed -n 's|^\s*inet\s\+\(\S\+\)\s.*|\1|p' <<< ${NETWORKINFO})
   GATEWAY=$(ip route | awk '/default/ {print $3}')
   DNS_SRV=${GATEWAY}
-  echo "# Start 10-eth0 configuration" > /etc/systemd/network/11-eth0.netdev
-  echo "[Match]" >> /etc/systemd/network/11-eth0.netdev
-  echo "Name=eth0" >> /etc/systemd/network/11-eth0.netdev
-  echo "" >> /etc/systemd/network/11-eth0.netdev
-  echo "[Network]" >> /etc/systemd/network/11-eth0.netdev
-  echo "Address=$INET" >> /etc/systemd/network/11-eth0.netdev
-  echo "DNS=$DNS_SRV" >> /etc/systemd/network/11-eth0.netdev
-  echo "" >> /etc/systemd/network/11-eth0.netdev
-  echo "[Route]" >> /etc/systemd/network/11-eth0.netdev
-  echo "Gateway=$GATEWAY" >> /etc/systemd/network/11-eth0.netdev
-  echo "# End 10-eth0 configuration" >> /etc/systemd/network/11-eth0.netdev
+  echo "# Start 10-eth1 configuration" > /etc/systemd/network/11-eth1.netdev
+  echo "[Match]" >> /etc/systemd/network/11-eth1.netdev
+  echo "Name=eth1" >> /etc/systemd/network/11-eth1.netdev
+  echo "" >> /etc/systemd/network/11-eth1.netdev
+  echo "[Network]" >> /etc/systemd/network/11-eth1.netdev
+  echo "Address=$INET" >> /etc/systemd/network/11-eth1.netdev
+  echo "DNS=$DNS_SRV" >> /etc/systemd/network/11-eth1.netdev
+  echo "" >> /etc/systemd/network/11-eth1.netdev
+  echo "[Route]" >> /etc/systemd/network/11-eth1.netdev
+  echo "Gateway=$GATEWAY" >> /etc/systemd/network/11-eth1.netdev
+  echo "# End 10-eth1 configuration" >> /etc/systemd/network/11-eth1.netdev
 
   echo
   echo -e $MAGENTA "Adding our DNS Server to the resolved configuration file ..." $BLACK
@@ -1273,7 +1273,7 @@ makeImage(){
     NFSMOUNTPOINT=$(cat RPi-PXE.conf | grep NFSMOUNT | awk -F ":" '{print $2}')
   # If using Hard Drive or SD Card
   else
-    NETWORKINFO=$(ip -4 addr show dev eth0 | grep inet)
+    NETWORKINFO=$(ip -4 addr show dev eth1 | grep inet)
     NFSIP=$(sed -nr 's|.*inet ([^ ]+)/.*|\1|p' <<< ${NETWORKINFO})
     NFSMOUNTPOINT=/PXE
   fi
@@ -1432,7 +1432,7 @@ showInformationAboutPxeServer(){
   # the tr part is to suppress the warning about a null byte
   PIMODEL=$(cat /sys/firmware/devicetree/base/model | tr '\0' '\n')
   OSVERSION=$(cat /etc/os-release | grep PRETTY_NAME | awk -F '"' '/PRETTY_NAME/{print $2}')
-  NETWORKINFO=$(ip -4 addr show dev eth0 | grep inet)
+  NETWORKINFO=$(ip -4 addr show dev eth1 | grep inet)
   INET=$(sed -nr 's|.*inet ([^ ]+)/.*|\1|p' <<< ${NETWORKINFO})
   BRD=$(sed -n 's|^.*\s*brd\s\+\(\S\+\)\s.*|\1|p' <<< ${NETWORKINFO})
   GATEWAY=$(ip route | awk '/default/ {print $3}')

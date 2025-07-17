@@ -491,7 +491,7 @@ identifyPis(){
   echo " IT WILL TAKE TIME.  Please be patient."
   echo " -----------------------------------------------------------------------------------------------------------"
 
-  NETWORKINFO=$(ip -4 addr show dev eth1 | grep inet)
+  NETWORKINFO=$(ip -4 addr show dev eth0 | grep inet)
   GATEWAY=$(ip route | awk '/default/ {print $3}')
   BASEIP=$(echo $GATEWAY | awk -F '.' '{ print $1"."$2"."$3"." }')
 

@@ -1052,8 +1052,11 @@ installPXE(){
   # Append to the configuration file
   # Set the Broadcast address of our network (to listen in).  Set the PXE service for Raspberry Pis.  Set the root of the TFTP server to our boot folder.
   echo "# Start DNSMasq service configuration" > /etc/dnsmasq.conf
-  echo "port=0" >> /etc/dnsmasq.conf
-  echo "dhcp-range=$BRD,proxy" >> /etc/dnsmasq.conf
+  echo "interface=eth1" >> /etc/dnsmasq.conf
+  echo "bind-interfaces" >> /etc/dnsmasq.conf
+  echo "dhcp-range=10.0.0.100,10.0.0.200,12h" >> /etc/dnsmasq.conf
+  echo "dhcp-authoritative" >> /etc/dnsmasq.conf
+  echo "log-dhcp" >> /etc/dnsmasq.conf
   echo "log-dhcp" >> /etc/dnsmasq.conf
   echo "enable-tftp" >> /etc/dnsmasq.conf
   echo "tftp-root=/PXE/boot" >> /etc/dnsmasq.conf

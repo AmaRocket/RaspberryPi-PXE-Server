@@ -231,6 +231,7 @@ deployImage(){
     read -p " Please provide the NFS share mount point [e.g. /volume1/PXE] : " MOUNTPOINT
     echo -e $MAGENTA
     echo " Changing the /boot/cmdline.txt to boot from the NFS directory ..."
+    #sed -i "s|\(^.*root=\).*$|\1/dev/nfs nfsroot=${NFSIP}:${MOUNTPOINT}/filesystems/${SERIALNUMBER},vers=4.1,proto=tcp rw ip=dhcp rootwait elevator=deadline|" "/NFSPXE/boot/${SERIALNUMBER}/cmdline.txt"
     # Temporarily using NFS v3
     sed -i "s|\(^.*root=\).*$|\1/dev/nfs nfsroot=${NFSIP}:${MOUNTPOINT}/filesystems/${SERIALNUMBER},vers=3 rw ip=dhcp rootwait|" "/NFSPXE/boot/${SERIALNUMBER}/cmdline.txt"
 
@@ -340,7 +341,7 @@ deployImage(){
       mainMenu
     fi
 
-    NETWORKINFO=$(ip -4 addr show dev eth1 | grep inet)
+    NETWORKINFO=$(ip -4 addr show dev eth0 | grep inet)
     NFSIP=$(sed -nr 's|.*inet ([^ ]+)/.*|\1|p' <<< ${NETWORKINFO})
     NFSMOUNTPOINT=/PXE
 
@@ -630,21 +631,6 @@ installPXE(){
   echo
   apt-get autoremove -y > /dev/null & showSpinner
   echo
-
-  # Installing WakeOnLan
-  echo
-  echo -e $MAGENTA "Installing WakeOnLan ..." $BLACK
-  echo
-  WAKEONLAN_STATUS=$(dpkg-query -W --showformat='${Status}\n' wakeonlan|grep "install ok installed")
-  if [ "" = "$WAKEONLAN_STATUS" ]; then
-    echo -e $YELLOW "  - WakeOnLan is not installed yet. It will be installed now ..." $BLACK
-    echo
-    apt-get install wakeonlan -y > /dev/null & showSpinner
-    echo
-  else
-    echo -e $GREEN "  - WakeOnLAn has already been installed. :)" $BLACK
-    echo
-  fi
 
   promptForEnter
 
@@ -1047,16 +1033,13 @@ installPXE(){
   echo
   echo -e $MAGENTA "Preparing the DNSMasq configuration file ..." $BLACK
   echo
-  NETWORKINFO=$(ip -4 addr show dev eth1 | grep inet)
+  NETWORKINFO=$(ip -4 addr show dev eth0 | grep inet)
   BRD=$(sed -n 's|^.*\s*brd\s\+\(\S\+\)\s.*|\1|p' <<< ${NETWORKINFO})
   # Append to the configuration file
   # Set the Broadcast address of our network (to listen in).  Set the PXE service for Raspberry Pis.  Set the root of the TFTP server to our boot folder.
   echo "# Start DNSMasq service configuration" > /etc/dnsmasq.conf
-  echo "interface=eth1" >> /etc/dnsmasq.conf
-  echo "bind-interfaces" >> /etc/dnsmasq.conf
-  echo "dhcp-range=10.0.0.100,10.0.0.200,12h" >> /etc/dnsmasq.conf
-  echo "dhcp-authoritative" >> /etc/dnsmasq.conf
-  echo "log-dhcp" >> /etc/dnsmasq.conf
+  echo "port=0" >> /etc/dnsmasq.conf
+  echo "dhcp-range=$BRD,proxy" >> /etc/dnsmasq.conf
   echo "log-dhcp" >> /etc/dnsmasq.conf
   echo "enable-tftp" >> /etc/dnsmasq.conf
   echo "tftp-root=/PXE/boot" >> /etc/dnsmasq.conf
@@ -1064,33 +1047,33 @@ installPXE(){
   echo "# End DNSMasq" >> /etc/dnsmasq.conf
 
   echo
-  echo -e $MAGENTA "Preparing the 10-eth1 network configuration file ..." $BLACK
+  echo -e $MAGENTA "Preparing the 10-eth0 network configuration file ..." $BLACK
   echo
-  echo "# Start 10-eth1 configuration" > /etc/systemd/network/10-eth1.netdev
-  echo "[Match]" >> /etc/systemd/network/10-eth1.netdev
-  echo "Name=eth1" >> /etc/systemd/network/10-eth1.netdev
-  echo "" >> /etc/systemd/network/10-eth1.netdev
-  echo "[Network]" >> /etc/systemd/network/10-eth1.netdev
-  echo "DHCP=no" >> /etc/systemd/network/10-eth1.netdev
-  echo "# End 10-eth1 configuration" >> /etc/systemd/network/10-eth1.netdev
+  echo "# Start 10-eth0 configuration" > /etc/systemd/network/10-eth0.netdev
+  echo "[Match]" >> /etc/systemd/network/10-eth0.netdev
+  echo "Name=eth0" >> /etc/systemd/network/10-eth0.netdev
+  echo "" >> /etc/systemd/network/10-eth0.netdev
+  echo "[Network]" >> /etc/systemd/network/10-eth0.netdev
+  echo "DHCP=no" >> /etc/systemd/network/10-eth0.netdev
+  echo "# End 10-eth0 configuration" >> /etc/systemd/network/10-eth0.netdev
 
   echo
-  echo -e $MAGENTA "Preparing the 11-eth1 network configuration file ..." $BLACK
+  echo -e $MAGENTA "Preparing the 11-eth0 network configuration file ..." $BLACK
   echo
   INET=$(sed -n 's|^\s*inet\s\+\(\S\+\)\s.*|\1|p' <<< ${NETWORKINFO})
   GATEWAY=$(ip route | awk '/default/ {print $3}')
   DNS_SRV=${GATEWAY}
-  echo "# Start 10-eth1 configuration" > /etc/systemd/network/11-eth1.netdev
-  echo "[Match]" >> /etc/systemd/network/11-eth1.netdev
-  echo "Name=eth1" >> /etc/systemd/network/11-eth1.netdev
-  echo "" >> /etc/systemd/network/11-eth1.netdev
-  echo "[Network]" >> /etc/systemd/network/11-eth1.netdev
-  echo "Address=$INET" >> /etc/systemd/network/11-eth1.netdev
-  echo "DNS=$DNS_SRV" >> /etc/systemd/network/11-eth1.netdev
-  echo "" >> /etc/systemd/network/11-eth1.netdev
-  echo "[Route]" >> /etc/systemd/network/11-eth1.netdev
-  echo "Gateway=$GATEWAY" >> /etc/systemd/network/11-eth1.netdev
-  echo "# End 10-eth1 configuration" >> /etc/systemd/network/11-eth1.netdev
+  echo "# Start 10-eth0 configuration" > /etc/systemd/network/11-eth0.netdev
+  echo "[Match]" >> /etc/systemd/network/11-eth0.netdev
+  echo "Name=eth0" >> /etc/systemd/network/11-eth0.netdev
+  echo "" >> /etc/systemd/network/11-eth0.netdev
+  echo "[Network]" >> /etc/systemd/network/11-eth0.netdev
+  echo "Address=$INET" >> /etc/systemd/network/11-eth0.netdev
+  echo "DNS=$DNS_SRV" >> /etc/systemd/network/11-eth0.netdev
+  echo "" >> /etc/systemd/network/11-eth0.netdev
+  echo "[Route]" >> /etc/systemd/network/11-eth0.netdev
+  echo "Gateway=$GATEWAY" >> /etc/systemd/network/11-eth0.netdev
+  echo "# End 10-eth0 configuration" >> /etc/systemd/network/11-eth0.netdev
 
   echo
   echo -e $MAGENTA "Adding our DNS Server to the resolved configuration file ..." $BLACK
@@ -1145,7 +1128,6 @@ mainMenu(){
   echo -e " 8) Provision a new Pi using an image"
   echo -e " 9) Delete an image of a Pi"
   echo -e "10) Delete provisioned Pi from Server"
-  echo -e "11) Power On a Node"
   echo -e " --------------------------------------------- Done For Now ------------------------------------------------"
   echo -e "q) Quit"
   echo
@@ -1185,9 +1167,6 @@ mainMenu(){
     10)
       deleteProvisionedPi
       ;;
-    11)
-      wakeNode
-      ;;
     q | Q)
       clear
       exit 0
@@ -1212,8 +1191,7 @@ makeImage(){
   echo "    Pi-3B-Stretch-MyApp"
   echo "    Pi-Zero-Jessie-MagicMirror"
   echo
-  IMAGENAME="worker-node"
-  echo "Using shared image name: ${IMAGENAME}"
+  read -p " What do you want to name the image? [e.g. See above examples] : " IMAGENAME
   while [ -d /PXE/images/boot/${IMAGENAME} ]
   do
     showHeader imager
@@ -1276,7 +1254,7 @@ makeImage(){
     NFSMOUNTPOINT=$(cat RPi-PXE.conf | grep NFSMOUNT | awk -F ":" '{print $2}')
   # If using Hard Drive or SD Card
   else
-    NETWORKINFO=$(ip -4 addr show dev eth1 | grep inet)
+    NETWORKINFO=$(ip -4 addr show dev eth0 | grep inet)
     NFSIP=$(sed -nr 's|.*inet ([^ ]+)/.*|\1|p' <<< ${NETWORKINFO})
     NFSMOUNTPOINT=/PXE
   fi
@@ -1435,7 +1413,7 @@ showInformationAboutPxeServer(){
   # the tr part is to suppress the warning about a null byte
   PIMODEL=$(cat /sys/firmware/devicetree/base/model | tr '\0' '\n')
   OSVERSION=$(cat /etc/os-release | grep PRETTY_NAME | awk -F '"' '/PRETTY_NAME/{print $2}')
-  NETWORKINFO=$(ip -4 addr show dev eth1 | grep inet)
+  NETWORKINFO=$(ip -4 addr show dev eth0 | grep inet)
   INET=$(sed -nr 's|.*inet ([^ ]+)/.*|\1|p' <<< ${NETWORKINFO})
   BRD=$(sed -n 's|^.*\s*brd\s\+\(\S\+\)\s.*|\1|p' <<< ${NETWORKINFO})
   GATEWAY=$(ip route | awk '/default/ {print $3}')
@@ -1617,23 +1595,6 @@ uninstallPXE(){
   echo
   promptForEnter
   reboot now
-}
-
-wakeNode(){
-  showHeader poweron
-  echo
-  echo -e $YELLOW"Known nodes:"
-  cat /PXE/nodes.txt
-  echo
-  read -p "Enter node name to wake: " NODENAME
-  MAC=$(grep "^$NODENAME" /PXE/nodes.txt | awk '{print $3}')
-  if [ -z "$MAC" ]; then
-    echo -e $RED "Node not found!" $BLACK
-    return
-  fi
-  echo "Sending Wake-on-LAN packet to $NODENAME ($MAC)..."
-  wakeonlan "$MAC"
-  promptForEnter
 }
 
 ################### EXECUTION ###################

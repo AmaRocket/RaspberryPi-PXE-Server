@@ -19,5 +19,4 @@ ______                _                           ______ _
                                                             
 ```
 
-## Hardcode to use eth1 interface for PXE ##
 

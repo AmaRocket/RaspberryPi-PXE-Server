@@ -231,7 +231,6 @@ deployImage(){
     read -p " Please provide the NFS share mount point [e.g. /volume1/PXE] : " MOUNTPOINT
     echo -e $MAGENTA
     echo " Changing the /boot/cmdline.txt to boot from the NFS directory ..."
-    #sed -i "s|\(^.*root=\).*$|\1/dev/nfs nfsroot=${NFSIP}:${MOUNTPOINT}/filesystems/${SERIALNUMBER},vers=4.1,proto=tcp rw ip=dhcp rootwait elevator=deadline|" "/NFSPXE/boot/${SERIALNUMBER}/cmdline.txt"
     # Temporarily using NFS v3
     sed -i "s|\(^.*root=\).*$|\1/dev/nfs nfsroot=${NFSIP}:${MOUNTPOINT}/filesystems/${SERIALNUMBER},vers=3 rw ip=dhcp rootwait|" "/NFSPXE/boot/${SERIALNUMBER}/cmdline.txt"
 
@@ -347,7 +346,7 @@ deployImage(){
 
     echo -e $MAGENTA
     echo " Changing the /boot/cmdline.txt to boot from the NFS directory ..."
-    sed -i "s|\(^.*root=\).*$|\1/dev/nfs nfsroot=${NFSIP}:${NFSMOUNTPOINT}/filesystems/${SERIALNUMBER},vers=4.1,proto=tcp rw ip=dhcp rootwait elevator=deadline|" "/PXE/boot/${SERIALNUMBER}/cmdline.txt"
+    sed -i "s|\(^.*root=\).*$|\1/dev/nfs nfsroot=${NFSIP}:${NFSMOUNTPOINT}/filesystems/${SERIALNUMBER},vers=3,proto=tcp rw ip=dhcp rootwait elevator=deadline|" "/PXE/boot/${SERIALNUMBER}/cmdline.txt"
 
     echo -e $MAGENTA
     echo " Clearing old mount directives from /etc/fstab ..."

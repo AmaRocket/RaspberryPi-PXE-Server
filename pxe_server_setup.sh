@@ -243,8 +243,8 @@ deployImage(){
     echo " Adding new mount directives to /etc/fstab ..."
     echo "" >> "/NFSPXE/filesystems/${SERIALNUMBER}/etc/fstab"
     echo "# NFS Share - File System" >> "/NFSPXE/filesystems/${SERIALNUMBER}/etc/fstab"
-    echo "${NFSIP}:${MOUNTPOINT}/boot/${SERIALNUMBER} /boot/firmware nfs defaults,vers=4.1,proto=tcp 0 0" >> "/NFSPXE/filesystems/${SERIALNUMBER}/etc/fstab"
-    echo "${NFSIP}:${MOUNTPOINT}/filesystems/${SERIALNUMBER} /     nfs defaults,vers=4.1,proto=tcp 0 0" >> "/NFSPXE/filesystems/${SERIALNUMBER}/etc/fstab"
+    echo "${NFSIP}:${MOUNTPOINT}/boot/${SERIALNUMBER} /boot/firmware nfs defaults,vers=3 ,proto=tcp 0 0" >> "/NFSPXE/filesystems/${SERIALNUMBER}/etc/fstab"
+    echo "${NFSIP}:${MOUNTPOINT}/filesystems/${SERIALNUMBER} /     nfs defaults,vers=3 ,proto=tcp 0 0" >> "/NFSPXE/filesystems/${SERIALNUMBER}/etc/fstab"
     echo "# NFS" >> "/NFSPXE/filesystems/${SERIALNUMBER}/etc/fstab"
 
     echo
@@ -357,8 +357,8 @@ deployImage(){
     echo " Adding new mount directives to /etc/fstab ..."
     echo "" >> "/PXE/filesystems/${SERIALNUMBER}/etc/fstab"
     echo "# NFS Share - File System" >> "/PXE/filesystems/${SERIALNUMBER}/etc/fstab"
-    echo "${NFSIP}:${NFSMOUNTPOINT}/boot/${SERIALNUMBER} /boot nfs defaults,vers=4.1,proto=tcp 0 0" >> "/PXE/filesystems/${SERIALNUMBER}/etc/fstab"
-    echo "${NFSIP}:${NFSMOUNTPOINT}/filesystems/${SERIALNUMBER} /     nfs defaults,vers=4.1,proto=tcp 0 0" >> "/PXE/filesystems/${SERIALNUMBER}/etc/fstab"
+    echo "${NFSIP}:${NFSMOUNTPOINT}/boot/${SERIALNUMBER} /boot nfs defaults,vers=3 ,proto=tcp 0 0" >> "/PXE/filesystems/${SERIALNUMBER}/etc/fstab"
+    echo "${NFSIP}:${NFSMOUNTPOINT}/filesystems/${SERIALNUMBER} /     nfs defaults,vers=3 ,proto=tcp 0 0" >> "/PXE/filesystems/${SERIALNUMBER}/etc/fstab"
     echo "# NFS" >> "/PXE/filesystems/${SERIALNUMBER}/etc/fstab"
 
     echo
@@ -937,15 +937,15 @@ installPXE(){
       echo
       echo -e $CYAN"    * Will replace it with:"
       echo
-      echo "      $NASIP:$NFSMOUNTPATH /NFSPXE nfs defaults,vers=4.1,proto=tcp 0 0"
-      sed "s*$CHECK*$NASIP:$NFSMOUNTPATH /NFSPXE nfs defaults,vers=4.1,proto=tcp 0 0*g" -i /etc/fstab
+      echo "      $NASIP:$NFSMOUNTPATH /NFSPXE nfs defaults,vers=3 ,proto=tcp 0 0"
+      sed "s*$CHECK*$NASIP:$NFSMOUNTPATH /NFSPXE nfs defaults,vers=3 ,proto=tcp 0 0*g" -i /etc/fstab
       echo
     else
       echo -e $MAGENTA"    * Adding the following NFS mount point:"
       echo
-      echo "      $NASIP:$NFSMOUNTPATH /NFSPXE nfs defaults,vers=4.1,proto=tcp 0 0"
+      echo "      $NASIP:$NFSMOUNTPATH /NFSPXE nfs defaults,vers=3 ,proto=tcp 0 0"
       echo "# NFS Shares" >> /etc/fstab
-      echo "$NASIP:$NFSMOUNTPATH /NFSPXE nfs defaults,vers=4.1,proto=tcp 0 0" >> /etc/fstab
+      echo "$NASIP:$NFSMOUNTPATH /NFSPXE nfs defaults,vers=3 ,proto=tcp 0 0" >> /etc/fstab
       echo "# NFS" >> /etc/fstab
       echo
     fi
